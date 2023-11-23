@@ -175,9 +175,58 @@ see [[day74readme]]
 Show the trend in rate of prize rewards with respect to time. Are more prizes given out now than when the award was first introduced?
 
 * Count the number of prizes awarded every year.
+```python
+prizes_per_year = df_data[df_data.year <= 2020].year.value_counts()
+#SOLUTION
+prize_per_year = df_data.groupby(by='year').count().prize
+```
 * Create a 5 year rolling average of the number of prizes (see [[day73readme]])
+```python
+rolling_prizes_per_year = prizes_per_year.sort_index().rolling(window=5, min_periods=0).mean()
+#SOLUTION
+rolling = prize_per_year.rolling(window=5).mean()
+```
 * Using Matplotlib superimpose the rolling average on a scatter plot
+```python
+prizes_per_year_copy = prizes_per_year.copy()
+prizes_per_year_copy.index = new_years
+
+# Using Matplotlib superimpose the rolling average on a scatter plot.
+# Use the named colours to draw the data points in dogerblue while the rolling average is coloured in crimson.
+
+scatter = plt.scatter(prizes_per_year_copy.index, prizes_per_year_copy.values, color='dodgerblue')
+plt.plot(rolling_copy.index, rolling_copy.values, color='crimson')
+
+# Show a tick mark on the x-axis for every 5 years from 1900 to 2020. (Hint: you'll need to use NumPy).
+new_years = [np.datetime64(str(year), 'D') for year in prizes_per_year.index]  # Forces every year into a Y-01-01 format
+every_5_years = mpl_dates.YearLocator(base=5)
+
+ax1 = plt.gca()
+ax1.xaxis.set_major_locator(every_5_years)
+ax1.set_xlim(min(new_years), max(new_years))
+
+plt.xticks(rotation=315)
+plt.show()
+#SOLUTION
+# Generate an array
+
+np.arange(1900, 2021, step=5)
+# Use our array to define the charts ticks
+
+plt.xticks(ticks=np.arange(1900, 2021, step=5))
+```
 * Show a tick mark on the x-axis for every 5 years from 1900 to 2020
+```python
+# Need to use NumPy
+
+new_years = sorted([np.datetime64(str(year), 'D') for year in prizes_per_year.index])  # Forces every year into a Y-01-01 format
+
+rolling_copy = rolling_prizes_per_year.copy()
+rolling_copy.index = new_years
+rolling_copy
+#SOLUTION
+
+```
 * Use `named colours` to draw the data points in `dogerblue` while the rolling average is colored in `crimson`
 * Did the first and second world wars have an impact on the number of prizes being given out?
 * What could be the reason for the trend in the chart?
