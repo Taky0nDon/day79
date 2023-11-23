@@ -101,3 +101,83 @@ df_data['share_pct'] = numerator / denominator
 2. Which category of prize has been awarded most frequently?
 3. Which countries have the most nobel prize winners?
 
+## Solutions
+
+1. Creating a donut chart
+```
+biology = df_data.sex.value_counts()
+fig = px.pie(labels=biology.index,
+values=biology.values,
+names=biology.index,
+hole=0.4)
+fig.update_traces(textposition='inside',
+textfont_size=15,
+textinfo='percent'
+)
+```
+
+2. First 3 women to win
+
+```
+df_data[df_data.sex == 'Female'].sort_values(by='year',
+ascending=True)[:3]
+```
+
+3. Repeat Winners
+```
+is_winner = df_data.duplicated(subset=['full_name'], keep=False)
+mutiple_winners = df_data[is_winner]
+print(f'There are {multiple_winners.full_name.nunique()} entities that have won more than one nobel prize.')
+```
+
+4. Prizes per category
+
+```
+prizes_per_category = df_data.category.value_counts()
+fig = px.bar(x=prizes_per_category.index,
+y=prizes_per_category.values,
+color=prizes_per_category.values,
+color_continuous_scale='Aggrnyl',
+title='Number of Prizes Awarded Per Category')
+
+fig.update_layout(xaxis_title='Nobel Prize Category',
+yaxis_title='Number of Prizes',
+coloraxis_showscale=False)
+```
+
+5. The Economics Prize
+
+```
+df_data[df_data.category == 'Economics'].sort_values(by='year')[:3]
+```
+
+6. Male and female winners by category
+
+```
+cat_men_women = df_data.groupby(['category', 'sex'],
+as_index=False).agg({'prize': pd.Series.count})
+cat_men_women.sort_values(by='prize',
+ascending=False,
+inplace=True)
+
+v_bar_split = px.bar(x=cat_men_women.category,
+y=cat_men_women.prize,
+color=cat_men_women.sex)
+v_bar_split.show()
+```
+
+## Multi-axis charts
+
+see [[day74readme]]
+
+### Challenge 1
+
+Show the trend in rate of prize rewards with respect to time. Are more prizes given out now than when the award was first introduced?
+
+* Count the number of prizes awarded every year.
+* Create a 5 year rolling average of the number of prizes (see [[day73readme]])
+* Using Matplotlib superimpose the rolling average on a scatter plot
+* Show a tick mark on the x-axis for every 5 years from 1900 to 2020
+* Use `named colours` to draw the data points in `dogerblue` while the rolling average is colored in `crimson`
+* Did the first and second world wars have an impact on the number of prizes being given out?
+* What could be the reason for the trend in the chart?
