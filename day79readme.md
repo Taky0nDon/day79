@@ -1,6 +1,6 @@
 #seaborn
 ## Learning Goals
-* Create a **Chloropleth** to display data on a map.
+* Create a **choropleth** to display data on a map.
 * Create bar charts showing different segments of the data with plotly.
 * Create Sunburst charts with plotly.
 * Use Seaborn's `.lmplot()` and show best-fit llines across multiple categories using the `row`, `hue`, and `lowess` parameters.
@@ -230,3 +230,148 @@ rolling_copy
 * Use `named colours` to draw the data points in `dogerblue` while the rolling average is colored in `crimson`
 * Did the first and second world wars have an impact on the number of prizes being given out?
 * What could be the reason for the trend in the chart?
+
+```python
+
+# * Calculate the average prize share of the winners on a year by year basis.
+yearly_share = df_data.groupby(by='year').share_pct.mean()
+
+rolling_yearly_share = yearly_share.rolling(window=5).mean()
+
+# Show a tick mark on the x-axis for every 5 years from 1900 to 2020. (Hint: you'll need to use NumPy).
+plt.xticks(ticks=np.arange(1900, 2021, 5),
+           rotation=45)
+ax1 = plt.gca()
+ax1.set_ylabel("Prizes Awarded", color='dodgerblue')
+ax1.set_xlim(1900, 2020)
+
+ax2 = ax1.twinx()
+ax2.set_ylabel("Rolling Average Prize Split Percentage", rotation=90, color='teal')
+ax2.set_ylim(40, 100)
+# Invert the Y-axis
+ax2.invert_yaxis()
+
+
+
+
+ax2.plot(rolling_yearly_share.index, rolling_yearly_share.values, color='teal')
+# Using Matplotlib superimpose the rolling average on a scatter plot.
+# Use the named colours to draw the data points in dogerblue while the rolling average is coloured in crimson.
+
+## Add a second axis and plot the rolling average of the prize share on it
+
+ax1.plot(rolling_prizes_per_year.index, rolling_prizes_per_year.values, color='crimson')
+
+
+plt.show()
+```
+
+#### Challenge 2
+
+Investigate if more prizes are shared than before.
+
+1. Calculate the average prize share of the winners on a year by year basis.
+    `yearly_share = df_data.groupby(by='year').share_pct.mean()`
+	solution: `yearly_avg_share = df_data.groupby(by='year').agg({'share_pct': pd.Series.mean})`
+ `share_moving_average = yearly_avg_share.rolling(window=5).mean()`
+ Using agg results in a named column with np.float64 type values. My original solution produces 
+2.  Calculate the 5 year rolling average of the percentage share.
+   `rolling_yearly_share = yearly_share.rolling(window=5).mean()` 
+3. Copy-paste the cell from the chart you created above.
+    
+4. Modify the code to add a secondary axis to your Matplotlib chart.
+    
+5. Plot the rolling average of the prize share on this chart.
+    
+6. See if you can invert the secondary y-axis to make the relationship even more clear.
+
+#### My Solution
+```python
+# Show a tick mark on the x-axis for every 5 years from 1900 to 2020. (Hint: you'll need to use NumPy).
+plt.xticks(ticks=np.arange(1900, 2021, 5),
+           rotation=45)
+ax1 = plt.gca()
+ax1.scatter(prizes_per_year.index, prizes_per_year.values, color='dodgerblue')
+ax1.plot(rolling_prizes_per_year.index, rolling_prizes_per_year.values, color='crimson')
+
+ax1.set_ylabel("Prizes Awarded", color='dodgerblue')
+ax1.set_xlim(1900, 2020)
+
+ax2 = ax1.twinx()  # Create a second axis.
+ax2.plot(rolling_yearly_share.index, rolling_yearly_share.values, color='teal')
+ax2.set_ylabel("Rolling Average Prize Split Percentage", rotation=90, color='teal')
+ax2.set_ylim(40, 100)
+# Invert the Y-axis
+ax2.invert_yaxis()
+# Using Matplotlib superimpose the rolling average on a scatter plot.
+# Use the named colours to draw the data points in dogerblue while the rolling average is coloured in crimson.
+
+## Add a second axis and plot the rolling average of the prize share on it
+plt.show()
+```
+
+### Solution
+
+```python
+plt.figure(figsize=(16, 8), dpi=200)
+plt.title('Number of Novel Prizes Awarded per Year', fontsize=18)
+plt.yticks(fontsize=14)
+plt.xticks(ticks=np.arange(1900, 2021, step=5),
+		  fontsize=14,
+		  rotation=45
+		  )
+
+ax1=plt.gca()
+ax2 = ax1.twinx()
+ax1.set_xlim(1900, 2020)
+
+ax1.scatter(x=prize_per_year.index,
+		   y=prize_per_year.values,
+		   c='dodgerblue',
+		   alpha=0.7,
+		   s=100
+		   )
+
+ax1.plot(prize_per_year.index,
+		moving_average.values,
+		c='crimson',
+		linewidth=3,
+		)
+
+# Adding a prize share plot on second axis.
+
+ax2.plot(prize_per_year.index,
+		share_moving_average.values,
+		c='grey',
+		linewidth=3,
+		)
+# Invert the y-axis of ax2
+ax2.invert_yaxis()
+plt.show()
+```
+
+## choropleth Map and Countries with the Most Prizes
+
+Which countries actually get the most prizes? And which categories are those prizes in?
+
+### Top 20 Country Ranking
+
+**top20_countries**
+
+| country | prizes |
+| --- | --- |
+| some country | prizes won |
+
+Which is the best column for country? `birth_country`, `birth_country_current`, or `organization_country`?
+
+organization_country is NaN for individuals
+birth_country contains countries that no longer exist
+birth_country_current is the best choice
+
+
+next chalenge:
+
+*Hint*: Take a two-step approach. The first step is grouping the data by country and category. Then you can create a DataFrame that looks something like this:
+
+<img src=https://i.imgur.com/VKjzKa1.png width=450>
+
