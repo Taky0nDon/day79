@@ -670,3 +670,43 @@ top20orgs_bar.update_layout(xaxis_title="Number of Prizes",
 ```
 
 ## Research Cities
+## Date stuff
+
+`Series.dt.date returns only the Y / M / D portion of a timestamp`
+
+```python
+age_df = df_data[["year", "birth_date"]].copy()
+df_data.laureate_type
+# # Convert the birth_data column to a timestamp
+age_df["birth_date_timestamp"] = pd.to_datetime(age_df["birth_date"])
+# Convert Timestamp to a datetime object
+age_df["birth_year"]  = age_df["birth_date_timestamp"].dt.date
+# Acess the datetime objet's year attribute
+age_df["birth_year"] = [dt.year for dt in age_df.birth_year]
+# Create the winning_age column. 
+age_df["winning_age"] = age_df["year"] - age_df["birth_year"]
+
+df_data["winning_age"] = [int(n) for n in age_df["winning_age"].fillna(0).copy()]
+```
+
+### Youngest an doldest
+
+```python
+youngest = df_data[df_data.laureate_type == 'Individual']\
+                .loc[df_data[df_data.laureate_type == 'Individual'].winning_age.idxmin()]
+young_name = youngest["full_name"]
+young_prize = youngest["prize"]
+
+oldest = df_data[df_data.laureate_type == 'Individual']\
+                .loc[df_data[df_data.laureate_type == 'Individual'].winning_age.idxmax()]
+old_name = oldest["full_name"]
+old_prize = oldest["prize"]
+print(f"The youngest laureate is {young_name}. They won {young_prize}.")
+print(f"The oldest is {old_name}. They won {old_prize}")
+```
+
+### Mean age of winners:
+```python
+mean_age = df_data.describe().loc["mean", "winning_age"]
+int(round(mean_age, 0))
+```
