@@ -710,3 +710,19 @@ print(f"The oldest is {old_name}. They won {old_prize}")
 mean_age = df_data.describe().loc["mean", "winning_age"]
 int(round(mean_age, 0))
 ```
+
+## What the fuck is a histogram?
+
+```python
+mean_age = df_data.describe().loc["mean", "winning_age"]
+int(round(mean_age, 0))
+age_value_count = df_data.winning_age.value_counts().sort_index()
+
+# Seaborn histogram
+# import seaborn as sns, for some reason
+age_hist = sns.histplot(data=age_value_count,
+                           x=age_value_count.index,
+                           y=age_value_count.values,
+                           bins=5)
+```
+![[example_histogram_day79.png]]
