@@ -375,3 +375,298 @@ next chalenge:
 
 <img src=https://i.imgur.com/VKjzKa1.png width=450>
 
+## Solution
+
+```python
+
+top_countries = df_data.groupby(by=['birth_country_current'], as_index=False)\
+						.agg({'prize'}: pd.Series.count)
+top20_countries = top_countries.sort_values(by='prize', inplace=True)[-20:]
+
+# Make a bar chart
+
+h_bar = px.bar(x=top20_countries.prize,
+			  y=top20_countries.birth_country_current,
+			  orientation='h',
+			  color=top20_countries.prize,
+			  color_continuous_scale='Viridis',
+			  title='Top 20 Countries by Number of Prizes')
+h_bar.update_layout(xaxis_title='Number of Prizes',
+				   yaxis_title='Country',
+				   coloraxis_showscale=False)
+h_bar.show()
+
+##### MINE #####
+
+top20_bar = px.bar(top20_countries[:20], x='prize', y='birth_country_current',
+                  )
+top20_bar.update_layout(
+title='Top 20 Countries by Nobel Prize Winners',
+    yaxis={'categoryorder': 'total ascending'},
+    yaxis_title='Country (Current)',
+    xaxis_title='Prizes Won',
+)
+
+## Choropleth Map
+
+df_countries = df_data.groupby(by=['birth_country_current', 'ISO'],
+							  as_index=False).agg({'prize': pd.Series.count})
+df_countries.sort_values('prize', ascending=False)
+
+## We can use the ISO country codes for the locations parameters on the choropleth.
+
+world_map = px.choroplet(df_countries,
+						locations='ISO',
+						color='prize',
+						hover_name='birth_country_current',
+						color_continous_scale=px.colors.sequential.matter)
+world_map.update_layout(coloraxis_showscale=True)
+world_map.show()
+
+
+#### MY ABSURDLY CONVOLUTED SOLUTION ####
+
+df_data.ISO
+test = top20_countries.copy()
+test = pd.merge(top20_countries, df_data[['birth_country_current', 'ISO']], left_on='birth_country_current', right_on='birth_country_current').drop_duplicates()
+test.index = top20_countries.index
+top20_countries.iso_alpha = test.ISO
+
+choropleth_map = px.choropleth(top20_countries,
+                                locations='iso_alpha',
+                                 color='prize',
+                                 hover_name='birth_country_current',
+                                 color_continuous_scale = 'matter'
+                                ).show()
+
+## Category Breakdown by Country
+
+cat_country = df_data.groupby(by=['birth_country_current', 'category'],
+							 as_index=False).agg({'prize': pd.Series.count})
+cat_country.sort_values(by='prize', ascending=False, inplace=True)
+
+# Merge cat_country with top20_countries so we get a column with the total numver of prizes too
+
+merged_df = pd.merge(cat_country, top20_countries, on='birth_country_current')
+
+merged_df.columns = ['birthday_country_current', 'category', 'cat_prize', 'total_prize']
+merged_df.sort_values(by='total_prize', inplace=True)
+
+
+## No we create a new bar chart using color to represent category prizes
+
+cat_cntry_bar = px.bar(x=merged_df.cat_prize,
+					  y=merged_df.birth_country_current,
+					  color=merged_df.category,
+					  orientation='h',
+					  title='Top 20 countries by Number of Prizes and Category')
+cat_cntry_bar.upate_layout(xaxis_title='Number of Prizes',
+						  yaxis_title='Country')
+
+#####MINE#####
+new_df = df_data.groupby(by=['birth_country_current', 'category'], as_index=False).agg({'prize': pd.Series.count})
+total_country_prizes = new_df.groupby('birth_country_current', as_index=False).agg({'prize': pd.Series.count})
+# new_df.rename(columns={'prize': 'cat_prize'}, inplace=True)
+# new_df.birth_country_current.nunique()
+new_df
+
+cat_country_df = pd.merge(left=new_df, right=top20_countries, on='birth_country_current')
+# cat_country_df.drop(['total_prize', 'iso_alpha'], axis=1, inplace=True)
+# cat_country_df.rename(columns={"prize": "total_prize"}, inplace=True)
+
+cat_country_df.sort_values(by='total_prize', ascending=False, inplace=True)
+
+top20_bar = px.bar(cat_country_df[:50], x='cat_prize', y='birth_country_current',
+                   color='category'
+                  )
+top20_bar.update_layout(
+title='Top 20 Countries by Nobel Prize Winners',
+    yaxis={'categoryorder': 'total ascending'},
+#     coloraxis={'order': 'total descending'},
+    yaxis_title='Country (Current)',
+    xaxis_title='Prizes Won',
+)
+
+
+## Country Prizes over Time
+# Count the number of prizes by country by year
+
+prize_by_year = df_data.groupby(by=['birth_country_current', 'year'], as_index=False).count()
+prize_by_year = prize_by_year.sort_values('year')[['year', 'birth_country_current', 'prize']]
+# Create a series that has a cumulative sum for the number of prizes won
+
+cumulative_prizes = prize_by_year.groupby(by=['birth_country_current', 'year']).sum().groupby(level=[0]).cumsum()
+cumulative_prizes.reset_index(inplace=True)
+
+l_chart = px.line(cumulative_prixes,
+				 x='year',
+				 y='prize',
+				 color='birth_country_current',
+				 hover_name='birth_country_current')
+l_chat.update_layout(xaxis_title='Year',
+					yaxis_title='Number of Prizes Won')
+l_chart.show()
+####MINE####
+######################IT'S FUCKIN CRAZY########################
+df_data.head(20)
+# Every country needs equal number of data points
+# US has 281
+# France has 57
+# Sum/count all prizes awarded to country in year and make that the new value for year index
+
+
+COUNTRY_QUERY = "United States of America"
+COUNTRY_CONDITION = df_data.birth_country_current == COUNTRY_QUERY
+
+df_data.loc[COUNTRY_CONDITION, "cumulative_wins"]
+len(df_data.loc[COUNTRY_CONDITION, "cumulative_wins"])
+
+df_data[df_data.birth_country_current == "United States of America"][df_data.cumulative_wins == df_data.cumulative_wins.cummax()].year.min()
+
+# US wins eclipsed other countries in 1950
+
+COUNTRY_TO_GRAPH = "France"
+
+df_data.groupby(by=['birth_country_current']).agg({'year': pd.Series.nunique})
+wins_by_year = df_data[['year', 'birth_country_current', 'cumulative_wins']]
+# print(wins_by_year.dropna().reset_index())
+px.line(
+       wins_by_year[wins_by_year.birth_country_current == "France"].cumulative_wins)
+index_is_year = wins_by_year.copy()
+index_is_year.index = index_is_year.year
+index_is_year.drop('year', axis=1, inplace=True)
+print(index_is_year)
+list_of_countries = index_is_year.birth_country_current.unique()
+index_is_year.groupby('birth_country_current', as_index=False).size()
+px.line(index_is_year[index_is_year.birth_country_current == COUNTRY_TO_GRAPH].cumulative_wins).show()
+#        index_is_year[index_is_year.birth_country_current == "Germany"].cumulative_wins)
+
+pd.pivot_table(index_is_year, values="cumulative_wins", index=index_is_year.index, columns="birth_country_current").France
+
+index_is_year[index_is_year.birth_country_current == COUNTRY_TO_GRAPH].cumulative_wins.info()
+
+year_country_wins = df_data[['year', 'birth_country_current', 'prize']].copy()
+year_country_wins.loc[:, "did_win"] = 1  # Creating a column that just =1 for wins
+year_country_wins.drop(index="Prizes_Won_Up_To_Year", inplace=True)
+yearly_wins_all_countries = year_country_wins.groupby(['year', 'birth_country_current'], as_index=False).agg({'did_win': pd.Series.sum})
+print(yearly_wins_all_countries)
+# us_cum_wins = year_country_wins.loc[year_country_wins.birth_country_current == "United States of America", "did_win"].cumsum().reset_index().drop(columns="index")
+# fr_cum_wins = year_country_wins.loc[year_country_wins.birth_country_current == "France", "did_win"].cumsum().reset_index().drop(columns="index")
+ 
+
+
+# us_cum_wins
+# fr_cum_wins.index = us_cum_wins.index
+
+pd.pivot_table(year_country_wins, values="did_win", columns="birth_country_current", index="year")
+
+# wins per year
+# You can chain .agg() to get running tally
+# FRESHING YEARLY_WINS DATAFRAME
+def starting_country_win_data(country: str):
+    yearly_wins_all_countries.index = np.int64(yearly_wins_all_countries.year)
+    yearly_wins_all_countries.drop(columns=['year'], inplace=True)
+    condition = yearly_wins_all_countries.birth_country_current == country
+
+    return yearly_wins_all_countries[condition]
+#     return yearly_wins = yearly_wins_all_countries[yearly_wins_all_countries.birth_country_current == country].groupby('year').agg({'did_win': pd.Series.count})  #.agg({'did_win': pd.Series.cumsum})
+france_data = starting_country_win_data("France").copy()
+france_data.rename(columns={'did_win': 'France'}, inplace=True)
+france_data
+yearly_wins_all_countries["year"] = yearly_wins_all_countries.index
+yearly_wins_all_countries
+
+yearly_wins_all_countries.groupby(['year']).agg({'did_win': pd.Series.cumsum})
+# Adding a running tally column to yearly_wins_all_countries
+# yearly_wins_all_countries["tally"] = yearly_wins_all_countries.groupby(['year','birth_country_current']).agg({'did_win': pd.Series.cumsum})
+# yearly_wins_all_countries
+
+yearly_wins.index = np.int64(yearly_wins.index)
+
+def add_no_win_years_data(country: str, df: pd.DataFrame):
+    before_wins = True
+    for year in range(1901, 2021):
+        if year in df.index:
+            before_wins = False
+            continue
+        elif before_wins:
+            df.loc[year, country] = 0
+        else:
+            df.loc[year, country] = df.loc[year - 1, country]
+add_no_win_years_data(country="USA", df=yearly_wins)
+yearly_wins.sort_index(inplace=True)
+
+fr_cum_wins = add_no_win_years_data(country='france'.title(), df=france_data)
+fr_tally = france_data.drop(columns='birth_country_current').sort_index().cumsum().copy()
+yearly_wins
+
+# yearly_wins["France"] = fr_tally["France"].copy()
+# yearly_wins["year"] = yearly_wins.index
+# yearly_wins.reset_index(inplace=True)
+# yearly_wins.drop("index", axis=1)
+
+# px.line(pivoted_yearly_wins, x=yearly_wins.columns, y='USA')
+px.data.gapminder().query("continent == 'Oceania'")
+
+test = df_data.groupby(['birth_country_current', 'year'], as_index=False).cumsum(numeric_only=True).dropna()
+test
+
+df_data_clean = df_data.dropna(subset=['cumulative_wins'])
+px.line(df_data_clean, x='year', y='cumulative_wins', color='birth_country_current')
+
+
+```
+
+## Top Research Organizations
+
+```python
+# Reset the dataframe
+df_data = pd.read_csv('nobel_prize_data.csv')
+orgs_df = df_data.dropna(subset=['organization_name']).groupby('organization_name', as_index=False).agg({'prize': pd.Series.count})
+
+top20_orgs_df = orgs_df.sort_values('prize')[-20:]
+
+top20orgs_bar = px.bar(top20_orgs_df,
+      x='prize',
+      y='organization_name',
+       color='prize',
+      orientation='h',
+      color_continuous_scale='Rdbu',
+      title="Top 20 Research Instutions by Number of Prizes",
+                      hover_name='organization_name')
+
+top20orgs_bar.update_layout(xaxis_title="Number of Prizes",
+                           yaxis_title="Institution",
+                           coloraxis_showscale=False)
+                   
+```
+![[Pasted image 20231129193447.png]]
+
+
+## Top Research Organizations
+
+solution:
+```python
+top20_orgs = df_data.organization_name.value_counts()[:20]
+top20_orgs.sort_values(ascending=True, inplace=True)
+# Mine
+orgs_df = df_data.dropna(subset=['organization_name']).groupby('organization_name', as_index=False).agg({'prize': pd.Series.count})
+
+top20_orgs_df = orgs_df.sort_values('prize')[-20:]
+
+top20orgs_bar = px.bar(top20_orgs_df,
+      x='prize',
+      y='organization_name',
+       color='prize',
+      orientation='h',
+      color_continuous_scale='Rdbu',
+      title="Top 20 Research Instutions by Number of Prizes",
+                      hover_name='organization_name')
+
+top20orgs_bar.update_layout(xaxis_title="Number of Prizes",
+                           yaxis_title="Institution",
+                           coloraxis_showscale=False)
+
+```
+
+## Research Cities
