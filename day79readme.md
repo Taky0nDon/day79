@@ -726,3 +726,31 @@ age_hist = sns.histplot(data=age_value_count,
                            bins=5)
 ```
 ![[example_histogram_day79.png]]
+
+#### with 20 bins
+![[day79_hist_20_bins.png]]
+This shows the range of the number of winners within 5 - year windows.  Not sure what the different shades represent. [[Learn More]](https://seaborn.pydata.org/generated/seaborn.histplot.html)
+
+## Descriptive Statistics
+
+???
+
+## Age of Winner Over Time
+Make a [regplot](https://seaborn.pydata.org/generated/seaborn.regplot.html?highlight=regplot#seaborn.regplot)
+
+Create a dataframe with the year and the average age of the winners (of that year, or up until that year? Not sure how the .mean() works in this case.)
+
+```python
+avg_age_over_time = df_data.copy().groupby('year', as_index=False)["winning_age"].mean()
+avg_age_over_time.rename(columns={'winning_age': 'mean_winning_age'},
+                         inplace=True)
+
+ age_reg = sns.regplot(data=avg_age_over_time,
+ x = "year",
+ y="mean_winning_age")
+```
+![[day79_age_regmodel.png]]
+ # What would this predict for a 2020 winner? 
+* Add a grid
+`with sns.axes_style({"axes.grid": True}):`
+
