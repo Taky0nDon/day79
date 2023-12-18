@@ -754,3 +754,170 @@ avg_age_over_time.rename(columns={'winning_age': 'mean_winning_age'},
 * Add a grid
 `with sns.axes_style({"axes.grid": True}):`
 
+
+## Solutions
+
+```python
+# Breakdown by country
+cat_country = df_data.groupby(by=['birth_country_current', 'category'], as_index=False).ag({'prize': pd.Series.count})
+cat_country.sort_values(by='prize', ascending=False, inplace=True)
+
+# Merge with top20 dataframe
+
+merged_df = pd.merge(cat_country, top20_countries, on="birth_country_current")
+# Change column names:
+merged_df.columns = ['birth_country_current', 
+					'category',
+					'cat_prize',
+					'total_prize']
+merged_df.sort_values(by='total_prize', inplace=True)
+# Make the bar chart showing categories within country winnings
+
+cat_cntry_bar = px.bar(x=merged_df.cat_prize,
+					  y=merged_df.birth_country_current,
+					  color=merged_df.category,
+					  orientation='h',
+					  title='Top 20 Countries by Number of Prizes and Category')
+cat_cntry_bar.update_layout(xaxis_title="Prizes",
+						   yaxis_title="Country")
+cat_cntry_bar.show()
+```
+
+## Country Prizes over Time
+*solution*
+```python
+prize_by_year = df_data.groupby(['birth_country_current', 'year'], as_index=False).count()
+
+prize_by_year = prize_by_year.sort_values(by='year')[['year', 'birth_country_current', 'prize']]
+# Create a series with the cumulative sum for the number of prizes won.
+
+cumulative_prizes = prize_by_year.groupby(['birth_country_current', 'year']).sum().groupby(level=[0]).cumsum()
+```
+>**level**int, level name, or sequence of such, default None
+>
+>If the axis is a MultiIndex (hierarchical), group by a particular level or levels. Do not specify both `by` and `level`.
+
+Since we didn't set `as_index=False` we created a data frame with with a MultiIndex. calling `groupby=[0]` performs another group by operation using the outermost level of the index.
+
+# Final Challenge
+
+## Mine
+```python
+avg_age_over_time_cat = df_data.copy().groupby(['year','category'], as_index=False)["winning_age"].mean()
+avg_age_over_time_cat.rename(columns={'winning_age': 'mean_winning_age'},
+                         inplace=True)
+print(avg_age_over_time_cat.columns)
+
+facet = sns.lmplot(data=avg_age_over_time_cat,
+    x="year",
+                  y="mean_winning_age",
+                  row="category",
+                  lowess=True)
+# All together
+
+facet = sns.lmplot(data=avg_age_over_time_cat,
+    x="year",
+                  y="mean_winning_age",
+                  hue="category",
+                  lowess=True)
+```
+
+## Solution
+
+1. Calculate the age at the time of award:
+```python
+# Extract the year as a number from the birth_date column:
+birth_years = df_data.birthdate.dt.year
+
+df_data['winning_age'] = df_data.year - birth_years
+```
+
+2. Oldest and Youngest Winners
+```python
+display(df_data.nlargest(n=1, columns='winning_age'))
+display(dt_data.nsmallest(n=1, columns='wining_age'))
+```
+I still got the right answer lol.
+```python
+# MINE
+
+youngest = df_data[df_data.laureate_type == 'Individual']\
+                .loc[df_data[df_data.laureate_type == 'Individual'].winning_age.idxmin()]
+young_name = youngest["full_name"]
+young_prize = youngest["prize"]
+
+oldest = df_data[df_data.laureate_type == 'Individual']\
+                .loc[df_data[df_data.laureate_type == 'Individual'].winning_age.idxmax()]
+old_name = oldest["full_name"]
+old_prize = oldest["prize"]
+print(f"The youngest laureate is {young_name}. They won {young_prize}.")
+print(f"The oldest is {old_name}. They won {old_prize}")
+```
+
+3. Descriptive Statistics and Histogram
+> Using `describe()` is a fantastic wasy to get a feeling for how the numbers are distributed in a particular column. However, actually visualizing them on a histogram to see their distribution is highly recommended too since it allows us to see if we have a bell-shaped curve or something else.
+
+`df_data.winning_age.dsecribe()`
+**Histogram**
+```python
+plt.figure(figsize=(8,4), dpi=200)
+sns.histplot(data=df_data,
+			x=df_data.winning_age,
+			bins=30)
+plt.xlabel('Age')
+plt.title('Distribution of Age on Receipt of Prize')
+plt.show()
+```
+
+4. Winning Age Over Time (All Categories)
+
+```python
+plt.figure(figsize=(8,4), dpi=200)
+with sns.axes_style("whitegrid"):
+	sns.regplot(data=df_data,
+	x='year',
+	y='winning_age',
+	lowess=True,
+	scatter_kws={'alpha': 0.4},
+	line_kws={'color': 'black'})
+plt.show()
+```
+![[Pasted image 20231215190222.png]]
+^ MINE
+
+![[Pasted image 20231215190439.png]]^ 100 DAYS'
+
+>Using the lowess parameter allows us to plot a local linear regression. this means the best fit line is still linear, but it's more like a moving average which gives uds a non-linear shape across the entire series. This is super neat because it clearly shows how the Novel laureates are getting thier award later and later in life. From 1900 to around 1950, the laureates were around 55 years old, but these days they are closer to 70 years old when they get their award! Additionally, the age of winning age has increased (more very old and very young winners)
+
+5. Age Differences between Categories
+
+> Seaborn allows us to create the aove chart by category. 
+
+soln
+```python
+plt.figure(figsize=(8,4), dpi=200)
+with sns.axes_style=("whitegrid"):
+	sns.boxplot(data=df_data,
+	x="category",
+	y="winning_age")
+plt.show()
+```
+![[Pasted image 20231215191441.png]]
+
+6. Laureate Age over Time by Category
+> to get a more complete picture, we should look at how the age of winners has changed over time. The box plot above loked at the dataset as a whole.
+
+**Use `hue` instead of `row` to get all the regressions on a single chart**
+
+## Learning Points  & Summary
+* How to uncover and investigate NaN values
+* How to convert objects and string data types to numbers
+* Creating dnut and bar charts with plotly.
+* Create a rolling average to smooth out time-series data and show a trend
+* How to use `.value_counts()`, `.groupby()`, `.merge()`, `.sort_values()`, and `.agg()`
+* Create a choropleth to display data on a map
+* Create bar charts shwoing different segments of the data with plotly.
+* Create sunburst charts with plotly.
+* Use Seaborn's `.lmplot()` and show best-fit lines across multiple categories with `row`, `hue`, and `lowess` parameters
+* Understand how a different picture emerges when looking at the same data in different ways (box plot vs time series analysics)
+* See the distribution of our data and visualize descriptive satsistics with the help of a histogram
